@@ -4,12 +4,12 @@ extern crate syn;
 extern crate quote;
 
 use proc_macro::TokenStream;
-use syn::{Body, VariantData}; 
+use syn::{Body, VariantData};
 
 #[proc_macro_derive(QueryParams)]
 pub fn derive_query_params(input: TokenStream) -> TokenStream {
     let s = input.to_string();
-    
+
     let ast = syn::parse_derive_input(&s).unwrap();
 
     let name = &ast.ident;
@@ -22,40 +22,64 @@ pub fn derive_query_params(input: TokenStream) -> TokenStream {
             }
         }
     };
-   
+
     gen.parse().unwrap()
+}
+
+fn get_print_fields(fields: &Vec<syn::Field>) -> Vec<quote::Tokens> {
+    fields.iter()
+        .map(|f| (&f.ident, &f.ty))
+        .map(|(ident, ty)| {
+            match ty {
+                    &syn::Ty::Path(_, ref path) => (ident, extract_type_name(path)),
+                    _ => unimplemented!(),
+            }
+        })
+        .map(|(ident, path)| {
+            match path {
+                "Vec" => quote! {
+                    s.push_str(format!("{}={}&", 
+                        stringify!(#ident), 
+                        self.#ident
+                            .iter()
+                            .fold(String::new(), |acc, &val| acc + &val.to_string() + ","))
+                            .as_str()
+                    ) 
+                },
+                _ => quote!{ s.push_str(format!("{}={}&", stringify!(#ident), self.#ident).as_str()) },
+            }  
+        })
+        .collect()
+}
+
+#[inline]
+fn extract_type_name(path: &syn::Path) -> &str {
+    path.segments.last().unwrap().ident.as_ref()
 }
 
 fn parse_struct_body(body: &Body) -> quote::Tokens {
     match *body {
         Body::Struct(VariantData::Struct(ref fs)) => {
-            let fnames = fs.iter().map(|f| &f.ident);
-            let fields = fs.iter().map(|f| &f.ident);
-           /*  let omg = fs.iter().map(|f| (&f.ident, &f.ty));
-
-            for (_, b) in omg {
-                match b {
-                    &syn::Ty::Path(_, ref b) => {
-                        println!("{}",b.segments.first().unwrap().ident.as_ref());
-                    },
-                    _ => {
-
-                    }
-                }
-            } */
+            //let fnames: Vec<&Option<syn::Ident>> = fs.iter().map(|f| &f.ident).collect();
+            //let fields = fnames.clone();
+            //let omg: Vec<_> = fs.iter().map(|f| (&f.ident, &f.ty)).collect();
+            let vector: Vec<quote::Tokens> = get_print_fields(fs);
 
             quote! {
                 let mut s = String::from("?");
 
-                #(
-                    s.push_str(format!("{}={}&", stringify!(#fields), self.#fnames).as_str());
-                )*
-
-                return s
+                // #(
+                //     s.push_str(format!("{}={:?}&", stringify!(#fields), self.#fnames).as_str());
+                // )*
+                (#(#vector),*); 
+                s.truncate(s.len() - 1);
+                return s;
             }
         }
-        Body::Struct(VariantData::Tuple(ref fs)) =>unimplemented!(),
-        Body::Struct(VariantData::Unit) => unimplemented!(),
-        Body::Enum(_) => unimplemented!(),
+        Body::Struct(VariantData::Tuple(_)) => 
+            panic!("#[derive(QueryParams)] is only defined for structs, not tuple"),
+        Body::Struct(VariantData::Unit) => 
+            panic!("#[derive(QueryParams)] is only defined for structs, not unit"),
+        Body::Enum(_) => panic!("#[derive(QueryParams)] is only defined for structs, not enum"),
     }
 }

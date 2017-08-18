@@ -11,6 +11,7 @@ struct ExampleStruct {
     pub field_2: String,
     pub field_3: bool,
     pub field_4: i64,
+    pub field_5: Vec<i32>,
 } 
 
 #[test]
@@ -20,6 +21,7 @@ fn test_query_params_is_eql() {
         field_2: "hello".to_string(),
         field_3: true,
         field_4: 1000,
+        field_5: vec!(4, 5, 8, 10),
     };
 
     assert_eq!(example_struct.to_query_params(), "?field_1=4&field_2=hello&field_3=true&field_4=1000&"); 
