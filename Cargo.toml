@@ -12,6 +12,9 @@ categories = ["development-tools"]
 keywords = ["derive", "macro", "query params", "struct", "http"]
 readme = "README.md"
 
+[badges]
+travis-ci = { repository = "NotBad4U/query_params" }
+
 [lib]
 proc-macro = true
 
