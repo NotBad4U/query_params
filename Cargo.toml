@@ -11,6 +11,7 @@ documentation = "https://docs.rs/query_params"
 categories = ["development-tools"]
 keywords = ["derive", "macro", "http"]
 readme = "README.md"
+license = "MIT"
 
 [badges]
 travis-ci = { repository = "NotBad4U/query_params" }
