@@ -8,14 +8,14 @@ use syn::{Body, VariantData};
 
 #[proc_macro_derive(QueryParams)]
 pub fn derive_query_params(input: TokenStream) -> TokenStream {
-    let s = input.to_string();
+    let input = input.to_string();
 
-    let ast = syn::parse_derive_input(&s).unwrap();
+    let ast = syn::parse_derive_input(&input).unwrap();
 
     let name = &ast.ident;
     let (impl_generics, ty_generics, where_clause) = ast.generics.split_for_impl();
 
-    let query_params = parse_struct_body(&ast.body);
+    let query_params = gen_serialization_query_params(&ast.body);
 
     let gen = quote! {
         impl #impl_generics #name #ty_generics #where_clause {
@@ -25,24 +25,24 @@ pub fn derive_query_params(input: TokenStream) -> TokenStream {
         }
     };
 
-    gen.parse().unwrap()
+    gen.parse().expect(format!("An error occurred when parsing the tokens generate for {} struct",name).as_str())
 }
 
 
-fn parse_struct_body(body: &Body) -> quote::Tokens {
+fn gen_serialization_query_params(body: &Body) -> quote::Tokens {
     match *body {
         Body::Struct(VariantData::Struct(ref fs)) => {
-            let vector: Vec<quote::Tokens> = get_print_fields(fs);
+            let query_params: Vec<quote::Tokens> = get_print_fields(fs);
 
             quote! {
-                let mut s = String::from("?");
+                let mut buf = String::from("?");
 
-                (#(#vector),*);
+                (#(#query_params),*);
 
-                let len_query_params = s.len();
-                s.truncate(len_query_params - 1);
+                let len_query_params = buf.len();
+                buf.truncate(len_query_params - 1); // remove trailing ampersand
 
-                return s;
+                return buf;
             }
         }
         Body::Struct(VariantData::Tuple(_)) => panic!("#[derive(QueryParams)] is only defined for structs, not tuple"),
@@ -55,15 +55,13 @@ fn parse_struct_body(body: &Body) -> quote::Tokens {
 fn get_print_fields(fields: &Vec<syn::Field>) -> Vec<quote::Tokens> {
     fields.iter()
         .map(|f| (&f.ident, &f.ty))
-        .map(|(ident, ty)|
-            match ty {
-                 &syn::Ty::Path(_, ref path) => (ident, extract_type_name(path)),
-                 _ => unimplemented!(),
-            }
-        )
+        .map(|(ident, ty)| match ty {
+            &syn::Ty::Path(_, ref path) => (ident, extract_type_name(path)),
+            _ => unimplemented!(),
+        })
         .map(|(ident, path)| match path {
             "Vec" => vec_to_query_params(ident),
-            "Option" => opt_to_query_params(ident),
+            "Option" => option_to_query_params(ident),
             _ => primitive_to_query_params(ident),
         })
         .collect()
@@ -78,11 +76,11 @@ fn extract_type_name(path: &syn::Path) -> &str {
 
 fn vec_to_query_params(ident: &Option<syn::Ident>) -> quote::Tokens {
     quote! {
-        s.push_str((format!("{}={}&",
+        buf.push_str((format!("{}={}&",
             stringify!(#ident),
             self.#ident
                 .iter()
-                .fold(String::new(), |acc, &val| acc + &val.to_string() + ","))
+                .fold(String::new(), |acc, ref val| acc + &val.to_string() + ","))
                 .as_str()
         )
         .replace(",&", "&") // remove trailing comma insert by fold
@@ -91,17 +89,17 @@ fn vec_to_query_params(ident: &Option<syn::Ident>) -> quote::Tokens {
 }
 
 
-fn opt_to_query_params(ident: &Option<syn::Ident>) -> quote::Tokens {
+fn option_to_query_params(ident: &Option<syn::Ident>) -> quote::Tokens {
     quote! {
         if self.#ident.is_some() {
-            s.push_str(format!("{}={}&", stringify!(#ident), self.#ident.as_ref().unwrap()).as_str())
-        } 
+            buf.push_str(format!("{}={}&", stringify!(#ident), self.#ident.as_ref().unwrap()).as_str())
+        }
     }
 }
 
 
 fn primitive_to_query_params(ident: &Option<syn::Ident>) -> quote::Tokens {
     quote!{
-        s.push_str(format!("{}={}&", stringify!(#ident), self.#ident).as_str())
+        buf.push_str(format!("{}={}&", stringify!(#ident), self.#ident).as_str())
     }
 }
