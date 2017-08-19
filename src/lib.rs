@@ -1,3 +1,66 @@
+//! Transform an arbitrary structs to a http query params
+//!
+//! This crate generate a function for serialize the fields of an arbitrary structs
+//! into a http query params `String` by the usage of a procedural macro with custom derive.
+//! The query params `String` return has for purpose to be use with any rust client http lib.    
+//!
+//! # Getting Start
+//!
+//! Add `query_params` as a dependency to you `Cargo.toml`.
+//!
+//! ## Overview
+//!
+//! ```rust
+//! #[macro_use]
+//! extern crate query_params;
+//! 
+//! #[derive(QueryParams)]
+//! struct PullRequestsParametersApi {
+//!     page: i32,
+//!     sort: bool,
+//!     direction: String,
+//!     state: Vec<String>,
+//!     // .. other interesting fields ..
+//! }
+//! 
+//! let pr = PullRequestsParametersApi {
+//!     page: 2,
+//!     sort: true,
+//!     direction: "asc",
+//!     state: vec!["open".to_string(), "closed".to_string()],
+//! }
+//! 
+//! pr.to_query_params();
+//! ```
+//!
+//! ## What that generate
+//!
+//!
+//! ```rust
+//! #[derive(QueryParams)]
+//! struct PullRequestsParametersApi {
+//!     page: i32,
+//!     sort: bool,
+//!     direction: String,
+//!     state: Vec<String>,
+//!     // .. other interesting fields ..
+//! }
+//! 
+//! // Code generate
+//! impl PullRequestsParametersApi {
+//!     fn to_query_params(&self) -> String {
+//!         let mut buf = String::from("?");
+//!         
+//!         // Stuff to fill buf with the struct fields content
+//!         
+//!         return buf
+//!     }
+//!     // expect "?page=2&sort=true&direction=asc&state=open,closed" with the example above
+//! }  
+//! ```
+
+#![crate_type = "proc-macro"]
+
 extern crate proc_macro;
 extern crate syn;
 #[macro_use]
@@ -28,7 +91,7 @@ pub fn derive_query_params(input: TokenStream) -> TokenStream {
     gen.parse().expect(format!("An error occurred when parsing the tokens generate for {} struct",name).as_str())
 }
 
-
+/// yolo
 fn gen_serialization_query_params(body: &Body) -> quote::Tokens {
     match *body {
         Body::Struct(VariantData::Struct(ref fs)) => {
@@ -51,7 +114,7 @@ fn gen_serialization_query_params(body: &Body) -> quote::Tokens {
     }
 }
 
-
+/// something cool
 fn get_print_fields(fields: &Vec<syn::Field>) -> Vec<quote::Tokens> {
     fields.iter()
         .map(|f| (&f.ident, &f.ty))
