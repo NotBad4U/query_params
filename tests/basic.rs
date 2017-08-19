@@ -13,6 +13,13 @@ struct ExampleStruct {
 #[derive(QueryParams)]
 struct EmptyStruct {} 
 
+#[derive(QueryParams)]
+struct OptsStruct {
+    field_1: Option<i64>,
+    field_2: Option<String>,
+    field_3: Option<i32>,
+} 
+
 #[test]
 fn test_query_params_is_eql() {
     let example_struct = ExampleStruct {
@@ -33,4 +40,15 @@ fn test_query_params_is_eql() {
 fn test_empty_struct() {
     let empty_struct = EmptyStruct{};
     assert_eq!(empty_struct.to_query_params(), ""); 
+}
+
+#[test]
+fn test_struct_with_opt_fields() {
+    let opts_struct = OptsStruct {
+        field_1: Some(42),
+        field_2: Some("test".to_string()),
+        field_3: None,
+    };
+
+    assert_eq!(opts_struct.to_query_params(), "?field_1=42&field_2=test"); 
 }

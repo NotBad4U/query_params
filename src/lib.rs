@@ -14,7 +14,7 @@ pub fn derive_query_params(input: TokenStream) -> TokenStream {
 
     let name = &ast.ident;
     let (impl_generics, ty_generics, where_clause) = ast.generics.split_for_impl();
-    
+
     let query_params = parse_struct_body(&ast.body);
 
     let gen = quote! {
@@ -55,7 +55,7 @@ fn parse_struct_body(body: &Body) -> quote::Tokens {
 fn get_print_fields(fields: &Vec<syn::Field>) -> Vec<quote::Tokens> {
     fields.iter()
         .map(|f| (&f.ident, &f.ty))
-        .map(|(ident, ty)| 
+        .map(|(ident, ty)|
             match ty {
                  &syn::Ty::Path(_, ref path) => (ident, extract_type_name(path)),
                  _ => unimplemented!(),
@@ -63,7 +63,8 @@ fn get_print_fields(fields: &Vec<syn::Field>) -> Vec<quote::Tokens> {
         )
         .map(|(ident, path)| match path {
             "Vec" => vec_to_query_params(ident),
-            _ => primitive_to_query_params(ident)
+            "Option" => opt_to_query_params(ident),
+            _ => primitive_to_query_params(ident),
         })
         .collect()
 }
@@ -90,8 +91,17 @@ fn vec_to_query_params(ident: &Option<syn::Ident>) -> quote::Tokens {
 }
 
 
+fn opt_to_query_params(ident: &Option<syn::Ident>) -> quote::Tokens {
+    quote! {
+        if self.#ident.is_some() {
+            s.push_str(format!("{}={}&", stringify!(#ident), self.#ident.as_ref().unwrap()).as_str())
+        } 
+    }
+}
+
+
 fn primitive_to_query_params(ident: &Option<syn::Ident>) -> quote::Tokens {
-    quote!{ 
-        s.push_str(format!("{}={}&", stringify!(#ident), self.#ident).as_str()) 
+    quote!{
+        s.push_str(format!("{}={}&", stringify!(#ident), self.#ident).as_str())
     }
 }
