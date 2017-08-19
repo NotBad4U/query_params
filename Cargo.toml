@@ -3,6 +3,15 @@ name = "query_params"
 version = "0.1.0"
 authors = ["Alessio Coltellacci <lightplay8@gmail.com>"]
 
+description = "Rust macro to automatically implement the serialization to http query parameters for arbitrary structs."
+homepage = "https://github.com/NotBad4U/query_params"
+repository = "https://github.com/NotBad4U/query_params"
+documentation = "https://docs.rs/query_params"
+
+categories = ["development-tools"]
+keywords = ["derive", "macro", "query params", "struct", "http"]
+readme = "README.md"
+
 [lib]
 proc-macro = true
 
