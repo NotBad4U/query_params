@@ -28,46 +28,6 @@ pub fn derive_query_params(input: TokenStream) -> TokenStream {
     gen.parse().unwrap()
 }
 
-fn get_print_fields(fields: &Vec<syn::Field>) -> Vec<quote::Tokens> {
-    fields.iter()
-        .map(|f| (&f.ident, &f.ty))
-        .map(|(ident, ty)| 
-            match ty {
-                 &syn::Ty::Path(_, ref path) => (ident, extract_type_name(path)),
-                 _ => unimplemented!(),
-            }
-        )
-        .map(|(ident, path)| match path {
-            "Vec" => vec_to_query_params(ident),
-            _ => primitive_to_query_params(ident)
-        })
-        .collect()
-}
-
-#[inline]
-fn extract_type_name(path: &syn::Path) -> &str {
-    path.segments.last().unwrap().ident.as_ref()
-}
-
-fn vec_to_query_params(ident: &Option<syn::Ident>) -> quote::Tokens {
-    quote! {
-        s.push_str((format!("{}={}&",
-            stringify!(#ident),
-            self.#ident
-                .iter()
-                .fold(String::new(), |acc, &val| acc + &val.to_string() + ","))
-                .as_str()
-        )
-        .replace(",&", "&") // remove trailing comma insert by fold
-        .as_str())
-    }
-}
-
-fn primitive_to_query_params(ident: &Option<syn::Ident>) -> quote::Tokens {
-    quote!{ 
-        s.push_str(format!("{}={}&", stringify!(#ident), self.#ident).as_str()) 
-    }
-}
 
 fn parse_struct_body(body: &Body) -> quote::Tokens {
     match *body {
@@ -88,5 +48,50 @@ fn parse_struct_body(body: &Body) -> quote::Tokens {
         Body::Struct(VariantData::Tuple(_)) => panic!("#[derive(QueryParams)] is only defined for structs, not tuple"),
         Body::Struct(VariantData::Unit) => panic!("#[derive(QueryParams)] is only defined for structs, not unit"),
         Body::Enum(_) => panic!("#[derive(QueryParams)] is only defined for structs, not enum"),
+    }
+}
+
+
+fn get_print_fields(fields: &Vec<syn::Field>) -> Vec<quote::Tokens> {
+    fields.iter()
+        .map(|f| (&f.ident, &f.ty))
+        .map(|(ident, ty)| 
+            match ty {
+                 &syn::Ty::Path(_, ref path) => (ident, extract_type_name(path)),
+                 _ => unimplemented!(),
+            }
+        )
+        .map(|(ident, path)| match path {
+            "Vec" => vec_to_query_params(ident),
+            _ => primitive_to_query_params(ident)
+        })
+        .collect()
+}
+
+
+#[inline]
+fn extract_type_name(path: &syn::Path) -> &str {
+    path.segments.last().unwrap().ident.as_ref()
+}
+
+
+fn vec_to_query_params(ident: &Option<syn::Ident>) -> quote::Tokens {
+    quote! {
+        s.push_str((format!("{}={}&",
+            stringify!(#ident),
+            self.#ident
+                .iter()
+                .fold(String::new(), |acc, &val| acc + &val.to_string() + ","))
+                .as_str()
+        )
+        .replace(",&", "&") // remove trailing comma insert by fold
+        .as_str())
+    }
+}
+
+
+fn primitive_to_query_params(ident: &Option<syn::Ident>) -> quote::Tokens {
+    quote!{ 
+        s.push_str(format!("{}={}&", stringify!(#ident), self.#ident).as_str()) 
     }
 }
