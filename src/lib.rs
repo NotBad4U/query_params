@@ -38,18 +38,8 @@ fn get_print_fields(fields: &Vec<syn::Field>) -> Vec<quote::Tokens> {
             }
         )
         .map(|(ident, path)| match path {
-            "Vec" => quote! {
-                s.push_str((format!("{}={}&",
-                    stringify!(#ident),
-                    self.#ident
-                        .iter()
-                        .fold(String::new(), |acc, &val| acc + &val.to_string() + ","))
-                        .as_str()
-                )
-                .replace(",&", "&") // remove trailing comma insert by fold
-                .as_str())
-            },
-            _ => quote!{ s.push_str(format!("{}={}&", stringify!(#ident), self.#ident).as_str()) }
+            "Vec" => vec_to_query_params(ident),
+            _ => primitive_to_query_params(ident)
         })
         .collect()
 }
@@ -57,6 +47,26 @@ fn get_print_fields(fields: &Vec<syn::Field>) -> Vec<quote::Tokens> {
 #[inline]
 fn extract_type_name(path: &syn::Path) -> &str {
     path.segments.last().unwrap().ident.as_ref()
+}
+
+fn vec_to_query_params(ident: &Option<syn::Ident>) -> quote::Tokens {
+    quote! {
+        s.push_str((format!("{}={}&",
+            stringify!(#ident),
+            self.#ident
+                .iter()
+                .fold(String::new(), |acc, &val| acc + &val.to_string() + ","))
+                .as_str()
+        )
+        .replace(",&", "&") // remove trailing comma insert by fold
+        .as_str())
+    }
+}
+
+fn primitive_to_query_params(ident: &Option<syn::Ident>) -> quote::Tokens {
+    quote!{ 
+        s.push_str(format!("{}={}&", stringify!(#ident), self.#ident).as_str()) 
+    }
 }
 
 fn parse_struct_body(body: &Body) -> quote::Tokens {
