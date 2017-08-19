@@ -13,10 +13,12 @@ pub fn derive_query_params(input: TokenStream) -> TokenStream {
     let ast = syn::parse_derive_input(&s).unwrap();
 
     let name = &ast.ident;
+    let (impl_generics, ty_generics, where_clause) = ast.generics.split_for_impl();
+    
     let query_params = parse_struct_body(&ast.body);
 
     let gen = quote! {
-        impl QueryParams for #name {
+        impl #impl_generics #name #ty_generics #where_clause {
             fn to_query_params(&self) -> String {
                 #query_params
             }

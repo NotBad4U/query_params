@@ -1,10 +1,6 @@
 #[macro_use]
 extern crate query_params;
 
-trait QueryParams {
-    fn to_query_params(&self) -> String;
-}
-
 #[derive(QueryParams)]
 struct ExampleStruct {
     pub field_1: i32,
