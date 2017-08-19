@@ -10,7 +10,7 @@
 //!
 //! ## Overview
 //!
-//! ```rust
+//! ```ignore,
 //! #[macro_use]
 //! extern crate query_params;
 //! 
@@ -26,9 +26,9 @@
 //! let pr = PullRequestsParametersApi {
 //!     page: 2,
 //!     sort: true,
-//!     direction: "asc",
+//!     direction: "asc".to_string(),
 //!     state: vec!["open".to_string(), "closed".to_string()],
-//! }
+//! };
 //! 
 //! pr.to_query_params();
 //! ```
@@ -36,7 +36,7 @@
 //! ## What that generate
 //!
 //!
-//! ```rust
+//! ```ignore,
 //! #[derive(QueryParams)]
 //! struct PullRequestsParametersApi {
 //!     page: i32,
