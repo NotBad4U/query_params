@@ -9,7 +9,7 @@ repository = "https://github.com/NotBad4U/query_params"
 documentation = "https://docs.rs/query_params"
 
 categories = ["development-tools"]
-keywords = ["derive", "macro", "query params", "struct", "http"]
+keywords = ["derive", "macro", "http"]
 readme = "README.md"
 
 [badges]
